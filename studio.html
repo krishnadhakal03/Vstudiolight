@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 Shorts Video Studio</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a26;
+    --border: #2a2a3e;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --gold: #ffd166;
+    --green: #06d6a0;
+    --text: #e8e6f0;
+    --text2: #9896b0;
+    --text3: #5e5c78;
+    --red: #ff4757;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  .topbar-logo span { color: var(--gold); }
+  .topbar-sub { color: var(--text2); font-size: 13px; }
+  .topbar-actions { margin-left: auto; display: flex; gap: 10px; }
+
+  /* ── LAYOUT ── */
+  .app { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 57px); }
+  .sidebar { background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .main { overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── SECTION CARDS ── */
+  .card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 14px;
+  }
+  .card-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .card-header .dot.gold { background: var(--gold); }
+  .card-header .dot.green { background: var(--green); }
+  .card-header .dot.red { background: var(--red); }
+
+  /* ── FORM ELEMENTS ── */
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 9px 12px;
+    font-size: 13px; font-family: var(--font); outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--bg2); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 18px; border-radius: 8px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--font); transition: all 0.2s; display: inline-flex;
+    align-items: center; gap: 7px; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5a52e0; transform: translateY(-1px); }
+  .btn-gold { background: var(--gold); color: #1a1400; }
+  .btn-gold:hover { background: #f0c040; }
+  .btn-green { background: var(--green); color: #001a13; }
+  .btn-green:hover { background: #04c090; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ── SCENE LIST ── */
+  .scene-list { display: flex; flex-direction: column; gap: 10px; }
+  .scene-item {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .scene-item:hover { border-color: var(--accent); }
+  .scene-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; cursor: pointer; user-select: none;
+  }
+  .scene-num {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .scene-title { flex: 1; font-size: 13px; font-weight: 600; }
+  .scene-meta { font-size: 11px; color: var(--text3); display: flex; gap: 8px; }
+  .scene-badge {
+    padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    background: var(--bg3); color: var(--text2);
+  }
+  .scene-body { padding: 0 14px 14px; display: none; }
+  .scene-body.open { display: block; }
+  .scene-actions { display: flex; gap: 6px; padding: 8px 14px; border-top: 1px solid var(--border); }
+
+  /* ── COLOUR PICKER SWATCHES ── */
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .swatch {
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.15s;
+  }
+  .swatch.selected { border-color: #fff; transform: scale(1.15); }
+  .swatch:hover { transform: scale(1.1); }
+
+  /* ── CODE OUTPUT ── */
+  .code-block {
+    background: #090912; border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; font-family: 'Courier New', monospace;
+    font-size: 12px; color: #a8b0d0; white-space: pre-wrap;
+    word-break: break-word; max-height: 420px; overflow-y: auto;
+    line-height: 1.6;
+  }
+  .code-block .kw  { color: #c792ea; }
+  .code-block .str { color: #c3e88d; }
+  .code-block .num { color: #f78c6c; }
+  .code-block .cmt { color: #546e7a; font-style: italic; }
+  .code-block .fn  { color: #82aaff; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tab {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px;
+    font-weight: 500; cursor: pointer; color: var(--text2);
+    background: transparent; border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PREVIEW PHONE ── */
+  .preview-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 10px; }
+  .phone-frame {
+    width: 220px; height: 390px; background: #1a1a26;
+    border-radius: 32px; border: 3px solid #333;
+    overflow: hidden; position: relative; flex-shrink: 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px #444;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 12px;
+  }
+  .phone-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .phone-headline { font-size: 16px; font-weight: 900; text-align: center; line-height: 1.1; margin-bottom: 8px; }
+  .phone-sub { font-size: 9px; color: #aaa; text-align: center; line-height: 1.4; }
+  .phone-caption {
+    position: absolute; bottom: 24px; left: 8px; right: 8px;
+    background: rgba(0,0,0,0.7); border-radius: 8px; padding: 5px 8px;
+    font-size: 8px; color: #fff; text-align: center;
+  }
+  .phone-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); }
+  .phone-glow {
+    position: absolute; bottom: -30px; left: -30px;
+    width: 120px; height: 120px; border-radius: 50%;
+    opacity: 0.3; filter: blur(30px);
+  }
+  .phone-notch {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    width: 50px; height: 6px; background: #333; border-radius: 3px;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-pill {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .stat-pill strong { color: var(--text); }
+  .stat-pill span { color: var(--text2); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--bg3); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; z-index: 999; transform: translateY(80px);
+    opacity: 0; transition: all 0.3s; display: flex; gap: 10px; align-items: center;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── GLOBAL SETTINGS GRID ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── STEP INDICATOR ── */
+  .steps { display: flex; gap: 8px; margin-bottom: 16px; }
+  .step { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step.done .step-num { background: var(--green); border-color: var(--green); color: #001; }
+  .step.active .step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step-arrow { color: var(--text3); font-size: 12px; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  .highlight { color: var(--gold); font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-accent { background: rgba(108,99,255,0.2); color: var(--accent); }
+  .tag-gold { background: rgba(255,209,102,0.15); color: var(--gold); }
+  .tag-green { background: rgba(6,214,160,0.15); color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">🎬 Shorts<span>Studio</span></div>
+  <div class="topbar-sub">Local → Colab Video Generator</div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Reset</button>
+    <button class="btn btn-gold btn-sm" onclick="generateColab()">⚡ Generate Colab Code</button>
+    <button class="btn btn-green btn-sm" onclick="downloadAll()">⬇ Download Package</button>
+  </div>
+</div>
+
+<div class="app">
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar">
+
+  <!-- Global Settings -->
+  <div class="card">
+    <div class="card-header"><div class="dot gold"></div>Global Settings</div>
+    <div class="settings-grid">
+      <div class="form-group">
+        <label>Resolution</label>
+        <select id="resolution">
+          <option value="1080x1920">1080×1920 (Shorts)</option>
+          <option value="1080x1080">1080×1080 (Square)</option>
+          <option value="1920x1080">1920×1080 (Landscape)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Frame Rate</label>
+        <select id="fps">
+          <option value="30">30 fps</option>
+          <option value="24">24 fps (cinematic)</option>
+          <option value="60">60 fps (smooth)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Voice Language</label>
+        <select id="lang">
+          <option value="en">English (US)</option>
+          <option value="en-uk">English (UK)</option>
+          <option value="en-au">English (AU)</option>
+          <option value="hi">Hindi</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Voice Speed</label>
+        <select id="voice_speed">
+          <option value="0.88">Slow (clear)</option>
+          <option value="0.93" selected>Normal</option>
+          <option value="1.0">Fast</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Video Quality</label>
+        <select id="quality">
+          <option value="18">High (CRF 18)</option>
+          <option value="22">Medium (CRF 22)</option>
+          <option value="26">Fast (CRF 26)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Output Filename</label>
+        <input type="text" id="output_name" value="my_shorts_video">
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Style -->
+  <div class="card">
+    <div class="card-header"><div class="dot"></div>Channel Style</div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Niche / Topic</label>
+      <select id="niche" onchange="applyTemplate()">
+        <option value="custom">Custom (manual)</option>
+        <option value="finance">💰 Finance / Money</option>
+        <option value="motivation">🔥 Motivation</option>
+        <option value="tech">🤖 Tech / AI</option>
+        <option value="health">💪 Health / Fitness</option>
+        <option value="mystery">🕵️ Mystery / Facts</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Visual Style</label>
+      <select id="visual_style">
+        <option value="dark_cinematic">🎬 Dark Cinematic</option>
+        <option value="neon_cyberpunk">🌆 Neon Cyberpunk</option>
+        <option value="clean_minimal">⬜ Clean Minimal</option>
+        <option value="bold_energetic">⚡ Bold Energetic</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Default Accent Color</label>
+      <div class="swatches" id="global-swatches">
+        <div class="swatch selected" style="background:#6c63ff" data-color="purple" onclick="selectGlobalColor(this,'#6c63ff','purple')"></div>
+        <div class="swatch" style="background:#ffd166" data-color="gold" onclick="selectGlobalColor(this,'#ffd166','gold')"></div>
+        <div class="swatch" style="background:#06d6a0" data-color="green" onclick="selectGlobalColor(this,'#06d6a0','green')"></div>
+        <div class="swatch" style="background:#ff6584" data-color="red_hot" onclick="selectGlobalColor(this,'#ff6584','red_hot')"></div>
+        <div class="swatch" style="background:#3c9cf0" data-color="blue_cold" onclick="selectGlobalColor(this,'#3c9cf0','blue_cold')"></div>
+        <div class="swatch" style="background:#ff9f43" data-color="orange" onclick="selectGlobalColor(this,'#ff9f43','orange')"></div>
+        <div class="swatch" style="background:#b044ff" data-color="purple2" onclick="selectGlobalColor(this,'#b044ff','purple2')"></div>
+        <div class="swatch" style="background:#ffffff" data-color="white_hot" onclick="selectGlobalColor(this,'#fff','white_hot')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Templates -->
+  <div class="card">
+    <div class="card-header"><div class="dot green"></div>Quick Templates</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-ghost btn-sm btn-full" onclick="loadTemplate('finance')">💰 Finance Hook Template</button>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="loadTemplate('motivation')">🔥 Motivation Template</button>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="loadTemplate('tech')">🤖 Tech/AI Template</button>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="loadTemplate('mystery')">🕵️ Mystery Template</button>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="addScene()">＋ Add Blank Scene</button>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ═══════ MAIN ═══════ -->
+<main class="main">
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-pill">🎬 <strong id="stat-scenes">0</strong><span>scenes</span></div>
+    <div class="stat-pill">⏱ <strong id="stat-duration">0s</strong><span>total</span></div>
+    <div class="stat-pill">🎙 <strong id="stat-words">0</strong><span>words</span></div>
+    <div class="stat-pill">📱 <strong id="stat-res">1080×1920</strong><span>resolution</span></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('scenes')">📋 Scenes</div>
+    <div class="tab" onclick="switchTab('preview')">👁 Preview</div>
+    <div class="tab" onclick="switchTab('colab')">⚡ Colab Code</div>
+    <div class="tab" onclick="switchTab('guide')">📖 Guide</div>
+  </div>
+
+  <!-- SCENES TAB -->
+  <div class="tab-panel active" id="tab-scenes">
+    <div class="card">
+      <div class="card-header">
+        <div class="dot"></div>Scene Editor
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="addScene()">＋ Add Scene</button>
+      </div>
+      <div class="scene-list" id="scene-list"></div>
+    </div>
+  </div>
+
+  <!-- PREVIEW TAB -->
+  <div class="tab-panel" id="tab-preview">
+    <div class="card">
+      <div class="card-header"><div class="dot gold"></div>Live Preview (Scene <span id="preview-num">1</span>)</div>
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+        <div class="preview-wrap">
+          <div class="phone-frame" id="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen" id="phone-screen">
+              <div class="phone-glow" id="phone-glow"></div>
+              <div class="phone-accent-bar" id="phone-accent-bar"></div>
+              <div class="phone-headline" id="phone-headline">YOUR HEADLINE</div>
+              <div class="phone-sub" id="phone-sub">Sub text here</div>
+              <div class="phone-caption" id="phone-caption">Narration caption preview</div>
+              <div class="phone-progress" id="phone-progress" style="width:40%"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="previewPrev()">◀ Prev</button>
+            <button class="btn btn-ghost btn-sm" onclick="previewNext()">Next ▶</button>
+          </div>
+          <div id="preview-details" style="font-size:13px;color:var(--text2);line-height:1.8"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLAB TAB -->
+  <div class="tab-panel" id="tab-colab">
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <div class="card">
+        <div class="card-header"><div class="dot gold"></div>How to use</div>
+        <div class="steps">
+          <div class="step done"><div class="step-num">✓</div>Design here</div>
+          <div class="step-arrow">→</div>
+          <div class="step active"><div class="step-num">2</div>Generate code</div>
+          <div class="step-arrow">→</div>
+          <div class="step"><div class="step-num">3</div>Open Colab</div>
+          <div class="step-arrow">→</div>
+          <div class="step"><div class="step-num">4</div>Paste & run</div>
+          <div class="step-arrow">→</div>
+          <div class="step"><div class="step-num">5</div>Download MP4</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="generateColab()">⚡ Generate All Colab Cells</button>
+          <button class="btn btn-primary" onclick="copyColab()">📋 Copy to Clipboard</button>
+          <a href="https://colab.research.google.com" target="_blank" class="btn btn-ghost">🔗 Open Google Colab</a>
+        </div>
+      </div>
+
+      <!-- Cell 1 -->
+      <div class="card">
+        <div class="card-header"><div class="dot red"></div>CELL 1 — Setup <span class="tag tag-accent" style="margin-left:auto">Run once per session</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyCell('cell1')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="cell1">Click "Generate All Colab Cells" above ↑</div>
+      </div>
+
+      <!-- Cell 2 -->
+      <div class="card">
+        <div class="card-header"><div class="dot gold"></div>CELL 2 — Your Video Config <span class="tag tag-gold" style="margin-left:auto">Your settings</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyCell('cell2')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="cell2">Click "Generate All Colab Cells" above ↑</div>
+      </div>
+
+      <!-- Cell 3 -->
+      <div class="card">
+        <div class="card-header"><div class="dot"></div>CELL 3 — Rendering Engine <span class="tag tag-accent" style="margin-left:auto">GPU accelerated</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyCell('cell3')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="cell3">Click "Generate All Colab Cells" above ↑</div>
+      </div>
+
+      <!-- Cell 4 -->
+      <div class="card">
+        <div class="card-header"><div class="dot green"></div>CELL 4 — Text Layout <span class="tag tag-green" style="margin-left:auto">Typography</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyCell('cell4')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="cell4">Click "Generate All Colab Cells" above ↑</div>
+      </div>
+
+      <!-- Cell 5 -->
+      <div class="card">
+        <div class="card-header"><div class="dot red"></div>CELL 5 — Render + Audio + Download <span class="tag tag-green" style="margin-left:auto">Final output</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyCell('cell5')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="cell5">Click "Generate All Colab Cells" above ↑</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GUIDE TAB -->
+  <div class="tab-panel" id="tab-guide">
+    <div class="card">
+      <div class="card-header"><div class="dot gold"></div>📖 Complete Usage Guide</div>
+      <div style="font-size:13px;line-height:1.9;color:var(--text2);display:flex;flex-direction:column;gap:14px">
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">🏠 Step 1 — Design locally (this app)</div>
+          Open <code style="background:var(--bg);padding:2px 6px;border-radius:4px">studio.html</code> in any browser.
+          No internet needed. Design your scenes, pick colours, write narration. Live preview updates as you type.
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">⚡ Step 2 — Generate Colab code</div>
+          Click the <span style="color:var(--gold)">⚡ Generate All Colab Cells</span> button.
+          This creates 5 Colab cells tailored to your exact scenes and settings.
+          Use the <span style="color:var(--accent)">📋 Copy</span> buttons to copy each cell.
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">🔗 Step 3 — Open Google Colab</div>
+          Go to <a href="https://colab.research.google.com" target="_blank" style="color:var(--accent)">colab.research.google.com</a>.
+          Create a new notebook. Make sure to enable GPU:
+          <strong style="color:var(--text)">Runtime → Change runtime type → T4 GPU</strong>.
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">📋 Step 4 — Paste cells in order</div>
+          Create 5 code cells. Paste Cell 1 → Cell 2 → Cell 3 → Cell 4 → Cell 5 into each.
+          Run them top to bottom with <strong style="color:var(--text)">Shift+Enter</strong>.
+          Cell 1 installs deps (~2 min). Cells 2–4 are instant. Cell 5 renders + downloads.
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">⬇ Step 5 — Download your MP4</div>
+          Cell 5 auto-triggers a browser download of your finished video.
+          It's H.264, AAC audio, 1080×1920 — ready to upload to YouTube Shorts, TikTok, or Reels.
+        </div>
+
+        <hr class="divider">
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:8px">🎛 Scene Layout Types</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--bg);border-radius:8px;padding:10px">
+              <div style="color:var(--text);font-weight:600;margin-bottom:2px">hook</div>
+              <div style="font-size:12px">Left-anchored bold stack with accent bar strip. Best for opening scene.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px">
+              <div style="color:var(--text);font-weight:600;margin-bottom:2px">bigstat</div>
+              <div style="font-size:12px">Giant centred number/word with glow layers. Best for key data points.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px">
+              <div style="color:var(--text);font-weight:600;margin-bottom:2px">split</div>
+              <div style="font-size:12px">Bold headline + dark pill body text box. Best for problem/reveal scenes.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px">
+              <div style="color:var(--text);font-weight:600;margin-bottom:2px">code</div>
+              <div style="font-size:12px">Terminal-style code block. Best for showing prompts or steps.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px">
+              <div style="color:var(--text);font-weight:600;margin-bottom:2px">cta</div>
+              <div style="font-size:12px">Centred with subtle bounce animation. Best for call-to-action endings.</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:8px">✨ FX Types</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--bg);border-radius:8px;padding:10px"><strong style="color:var(--text)">particles</strong> — Floating accent dots, great for stats</div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px"><strong style="color:var(--text)">scanlines</strong> — Subtle TV lines, cinematic feel</div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px"><strong style="color:var(--text)">glitch</strong> — Digital glitch shifts, great for hooks</div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px"><strong style="color:var(--text)">pulse</strong> — Expanding ring from centre, great for CTA</div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">⚡ Render time estimates (Colab Free T4 GPU)</div>
+          <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px">
+            5 scenes × 3s = 15s video → ~2–4 min render<br>
+            7 scenes × 4s = 28s video → ~4–7 min render<br>
+            10 scenes × 3s = 30s video → ~5–8 min render<br>
+            <span style="color:var(--text3);margin-top:4px;display:block">GPU renders ~80–120 fps. CPU fallback ~15–25 fps.</span>
+          </div>
+        </div>
+
+        <div>
+          <div style="color:var(--text);font-weight:700;margin-bottom:4px">💾 Download Package</div>
+          Use <span style="color:var(--green)">⬇ Download Package</span> to get a ZIP with this studio HTML + a
+          pre-filled <code style="background:var(--bg);padding:2px 6px;border-radius:4px">colab_notebook.py</code>
+          containing all 5 cells ready to paste.
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✅ Copied!</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let globalAccentHex = '#6c63ff';
+let globalAccentKey = 'purple';
+let previewIdx = 0;
+
+const COLORS = {
+  purple:    [108,99,255],
+  gold:      [255,209,102],
+  green:     [6,214,160],
+  red_hot:   [255,101,132],
+  blue_cold: [60,140,255],
+  orange:    [255,159,67],
+  purple2:   [176,68,255],
+  white_hot: [240,238,230],
+};
+
+const LAYOUTS = ['hook','bigstat','split','code','cta'];
+const FX_LIST = ['particles','scanlines','glitch','pulse','none'];
+
+const TEMPLATES = {
+  finance: [
+    { duration:3,  layout:'hook',    head:'YOUR CAR\nINSURANCE\nRENEWED.', sub:'That was their plan.', accent:'red_hot',   narration:"Your car insurance renewed automatically last month. That was their plan.", fx:'glitch' },
+    { duration:3,  layout:'bigstat', head:'$2,144',   sub:'Average American pays per year\nUP 46% since 2022', accent:'blue_cold', narration:"The average American now pays over two thousand dollars a year. Up 46 percent since 2022.", fx:'scanlines' },
+    { duration:3,  layout:'bigstat', head:'242M\nDRIVERS', sub:'58% believe they overpay.\nThey\'re right.', accent:'gold', narration:"242 million drivers. 58 percent believe they overpay. They are right.", fx:'particles' },
+    { duration:4,  layout:'split',   head:'AUTO-RENEWAL\nIS A TRAP',  sub:'Insurers profit from\nyour loyalty & inertia.\nThey never offer discounts.', accent:'red_hot', narration:"Auto-renewal is a trap. Insurers profit from your loyalty. They will never proactively offer you a discount.", fx:'pulse' },
+    { duration:4,  layout:'bigstat', head:'$368',  sub:'Average annual overpayment\nSwitchers save $461/yr', accent:'green', narration:"The average driver overpays by 368 dollars every year. Switchers saved a median of 461 dollars.", fx:'particles' },
+    { duration:5,  layout:'code',    head:'PASTE THIS\nINTO AI',  sub:'I pay $[X]/month with [carrier].\nClean record, under 10K miles/yr.\nList every discount I qualify for\n+ write my negotiation script.', accent:'blue_cold', narration:"Here is the exact prompt. Paste it into Claude or ChatGPT. It will list every discount and write your negotiation script.", fx:'scanlines' },
+    { duration:3,  layout:'cta',     head:'COMMENT\n"CAR"',  sub:'Get the full discount checklist 👇\nFollow for daily money saves', accent:'purple', narration:"Comment the word CAR below and I will send you the complete discount checklist. Save this for renewal day.", fx:'pulse' },
+  ],
+  motivation: [
+    { duration:3,  layout:'hook',    head:'MOST PEOPLE\nWILL QUIT\nTODAY.', sub:'Will you?', accent:'red_hot', narration:"Most people will quit today. The question is — will you?", fx:'glitch' },
+    { duration:3,  layout:'bigstat', head:'83%', sub:'Of people never start\ntheir dreams. Don\'t be them.', accent:'gold', narration:"83 percent of people never even start. They wait for the perfect moment that never comes.", fx:'particles' },
+    { duration:4,  layout:'split',   head:'THE PERFECT\nMOMENT\nIS A MYTH', sub:'Successful people started\nbefore they were ready.\nBefore they felt confident.', accent:'orange', narration:"The perfect moment is a myth. Every successful person you admire started before they were ready.", fx:'pulse' },
+    { duration:3,  layout:'bigstat', head:'1%', sub:'Better every day\n= 37x better in a year', accent:'green', narration:"Getting just 1 percent better every single day makes you 37 times better by the end of the year.", fx:'scanlines' },
+    { duration:3,  layout:'cta',     head:'FOLLOW\nNOW', sub:'Daily motivation drops 🔥\nYour future self will thank you', accent:'red_hot', narration:"Follow for daily motivation. Your future self will thank you for the decision you make right now.", fx:'pulse' },
+  ],
+  tech: [
+    { duration:3,  layout:'hook',    head:'AI WILL\nREPLACE\n200M JOBS.', sub:'Are you prepared?', accent:'blue_cold', narration:"Artificial intelligence will replace 200 million jobs in the next decade. Are you one of them?", fx:'glitch' },
+    { duration:3,  layout:'bigstat', head:'$15.7T', sub:'AI economic impact by 2030\n(McKinsey Report)', accent:'purple', narration:"McKinsey reports AI will add 15.7 trillion dollars to the global economy by 2030.", fx:'scanlines' },
+    { duration:4,  layout:'split',   head:'BUT HERE\'S\nTHE TRUTH', sub:'AI won\'t replace you.\nSomeone using AI will.\nLearn the tools now.', accent:'gold', narration:"But here is the truth. AI will not replace you. Someone who knows how to use AI will replace you. Learn the tools now.", fx:'particles' },
+    { duration:5,  layout:'code',    head:'START WITH\nTHIS PROMPT', sub:'Act as an expert in [my field].\nIdentify which of my tasks\nAI can automate today\nand show me how.', accent:'blue_cold', narration:"Start with this prompt in Claude or ChatGPT. It will identify exactly which of your tasks AI can automate today.", fx:'scanlines' },
+    { duration:3,  layout:'cta',     head:'FOLLOW\nFOR AI\nTIPS', sub:'Free prompts every day 🤖', accent:'purple', narration:"Follow for free AI tips and prompts every single day. The future belongs to those who start now.", fx:'pulse' },
+  ],
+  mystery: [
+    { duration:3,  layout:'hook',    head:'THIS ISLAND\nDISAPPEARED\nOVERNIGHT.', sub:'No one knows why.', accent:'purple2', narration:"This island disappeared overnight. Scientists have no explanation. And it gets stranger.", fx:'glitch' },
+    { duration:4,  layout:'split',   head:'SANDY\nISLAND', sub:'Appeared on maps for 200 years.\nSatellite confirmed it.\n2012: Ships found only ocean.', accent:'blue_cold', narration:"Sandy Island appeared on maps for over 200 years. Satellites confirmed its existence. Then in 2012, ships sailed there and found nothing but open ocean.", fx:'scanlines' },
+    { duration:3,  layout:'bigstat', head:'200+\nYEARS', sub:'On official Google Maps\nNow: completely gone', accent:'gold', narration:"It was on official maps for over 200 years, including Google Maps. Then it simply vanished from existence.", fx:'particles' },
+    { duration:4,  layout:'split',   head:'THE THEORIES', sub:'Phantom island from old maps.\nVolcanic rise and sinking.\nOr something stranger\nno one will say out loud.', accent:'purple2', narration:"The theories range from phantom islands copied from ancient maps, to volcanic activity, to theories that authorities simply will not discuss.", fx:'pulse' },
+    { duration:3,  layout:'cta',     head:'FOLLOW\nFOR MORE\nMYSTERIES', sub:'New case every day 🕵️', accent:'purple2', narration:"Follow for a new unsolved mystery every single day. The truth is out there.", fx:'pulse' },
+  ],
+};
+
+let scenes = [];
+
+// ═══════════════════════════════════════════════════════
+// SCENE MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function blankScene() {
+  return {
+    id: Date.now() + Math.random(),
+    duration: 3,
+    layout: 'bigstat',
+    head: 'YOUR\nHEADLINE',
+    sub: 'Supporting text here',
+    accent: globalAccentKey,
+    narration: 'Write what you want the narrator to say here.',
+    fx: 'particles',
+  };
+}
+
+function loadTemplate(name) {
+  scenes = TEMPLATES[name].map(s => ({ ...s, id: Date.now() + Math.random() }));
+  renderSceneList();
+  updateStats();
+  showToast(`✅ ${name} template loaded — ${scenes.length} scenes`);
+}
+
+function addScene() {
+  scenes.push(blankScene());
+  renderSceneList();
+  updateStats();
+}
+
+function removeScene(id) {
+  scenes = scenes.filter(s => s.id !== id);
+  renderSceneList();
+  updateStats();
+}
+
+function moveScene(id, dir) {
+  const i = scenes.findIndex(s => s.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= scenes.length) return;
+  [scenes[i], scenes[j]] = [scenes[j], scenes[i]];
+  renderSceneList();
+}
+
+function updateScene(id, field, value) {
+  const s = scenes.find(s => s.id === id);
+  if (s) {
+    s[field] = field === 'duration' ? parseFloat(value) : value;
+    updateStats();
+    updatePreview();
+  }
+}
+
+function renderSceneList() {
+  const list = document.getElementById('scene-list');
+  if (scenes.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">
+      No scenes yet. Load a template or click + Add Scene.
+    </div>`;
+    return;
+  }
+  list.innerHTML = scenes.map((s, i) => `
+    <div class="scene-item" id="si-${s.id}">
+      <div class="scene-header" onclick="toggleScene('${s.id}')">
+        <div class="scene-num" style="background:${accentHex(s.accent)}">${i+1}</div>
+        <div style="flex:1">
+          <div class="scene-title">${s.head.replace(/\n/g,' ').substring(0,35)}</div>
+          <div class="scene-meta">
+            <span>${s.duration}s</span>
+            <span class="scene-badge">${s.layout}</span>
+            <span class="scene-badge">${s.fx}</span>
+          </div>
+        </div>
+        <div style="color:var(--text3);font-size:12px">▼</div>
+      </div>
+      <div class="scene-body" id="sb-${s.id}">
+        <div class="form-row3" style="margin-bottom:10px">
+          <div class="form-group">
+            <label>Layout</label>
+            <select onchange="updateScene('${s.id}','layout',this.value)">
+              ${LAYOUTS.map(l=>`<option value="${l}" ${s.layout===l?'selected':''}>${l}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Duration (sec)</label>
+            <input type="number" min="1" max="15" step="0.5" value="${s.duration}"
+              onchange="updateScene('${s.id}','duration',this.value)">
+          </div>
+          <div class="form-group">
+            <label>FX</label>
+            <select onchange="updateScene('${s.id}','fx',this.value)">
+              ${FX_LIST.map(f=>`<option value="${f}" ${s.fx===f?'selected':''}>${f}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Headline (use \\n for new lines)</label>
+          <textarea rows="3" onchange="updateScene('${s.id}','head',this.value)">${s.head}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Sub Text</label>
+          <textarea rows="3" onchange="updateScene('${s.id}','sub',this.value)">${s.sub}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Narration (spoken aloud + shown as captions)</label>
+          <textarea rows="3" onchange="updateScene('${s.id}','narration',this.value)">${s.narration}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:4px">
+          <label>Accent Color</label>
+          <div class="swatches">
+            ${Object.entries(COLORS).map(([k,rgb])=>`
+              <div class="swatch ${s.accent===k?'selected':''}"
+                style="background:rgb(${rgb})"
+                onclick="setSceneAccent('${s.id}','${k}',this)"></div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="scene-actions">
+        <button class="btn btn-ghost btn-sm" onclick="moveScene('${s.id}',-1)">↑</button>
+        <button class="btn btn-ghost btn-sm" onclick="moveScene('${s.id}',1)">↓</button>
+        <button class="btn btn-ghost btn-sm" onclick="previewScene(${i})">👁 Preview</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="removeScene('${s.id}')">✕ Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleScene(id) {
+  const body = document.getElementById('sb-'+id);
+  body.classList.toggle('open');
+}
+
+function setSceneAccent(id, key, el) {
+  updateScene(id, 'accent', key);
+  el.parentElement.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function accentHex(key) {
+  const c = COLORS[key] || COLORS.purple;
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════════
+function previewScene(i) {
+  previewIdx = i;
+  switchTab('preview');
+  updatePreview();
+}
+
+function previewPrev() { if (previewIdx > 0) { previewIdx--; updatePreview(); } }
+function previewNext() { if (previewIdx < scenes.length-1) { previewIdx++; updatePreview(); } }
+
+function updatePreview() {
+  if (!scenes.length) return;
+  const s  = scenes[Math.min(previewIdx, scenes.length-1)];
+  const c  = COLORS[s.accent] || COLORS.purple;
+  const hex = `rgb(${c[0]},${c[1]},${c[2]})`;
+  const hex20 = `rgba(${c[0]},${c[1]},${c[2]},0.2)`;
+
+  document.getElementById('preview-num').textContent = previewIdx+1;
+  document.getElementById('phone-accent-bar').style.background = hex;
+  document.getElementById('phone-glow').style.background = hex;
+  document.getElementById('phone-screen').style.background =
+    `radial-gradient(ellipse at 10% 90%, ${hex20} 0%, #0a0a14 60%)`;
+  document.getElementById('phone-headline').innerHTML =
+    s.head.replace(/\n/g,'<br>');
+  document.getElementById('phone-headline').style.color = '#fff';
+  document.getElementById('phone-sub').innerHTML =
+    s.sub.replace(/\n/g,'<br>');
+  document.getElementById('phone-caption').textContent =
+    s.narration.split(' ').slice(0,8).join(' ') + '...';
+  document.getElementById('phone-progress').style.background = hex;
+  document.getElementById('phone-progress').style.width =
+    ((previewIdx+1)/scenes.length*100)+'%';
+
+  document.getElementById('preview-details').innerHTML = `
+    <div><strong style="color:var(--text)">Layout:</strong> ${s.layout}</div>
+    <div><strong style="color:var(--text)">Duration:</strong> ${s.duration}s</div>
+    <div><strong style="color:var(--text)">FX:</strong> ${s.fx}</div>
+    <div><strong style="color:var(--text)">Accent:</strong> <span style="color:${hex}">■</span> ${s.accent}</div>
+    <div><strong style="color:var(--text)">Words:</strong> ${s.narration.split(' ').length}</div>
+    <div style="margin-top:8px;font-size:12px">${s.narration}</div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════
+function updateStats() {
+  const total = scenes.reduce((a,s)=>a+s.duration,0);
+  const words = scenes.reduce((a,s)=>a+s.narration.split(' ').length,0);
+  const res = document.getElementById('resolution').value.replace('x','×');
+  document.getElementById('stat-scenes').textContent = scenes.length;
+  document.getElementById('stat-duration').textContent = total+'s';
+  document.getElementById('stat-words').textContent = words;
+  document.getElementById('stat-res').textContent = res;
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names = ['scenes','preview','colab','guide'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.classList.toggle('active', p.id === 'tab-'+name);
+  });
+  if (name==='preview') updatePreview();
+}
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL COLOUR
+// ═══════════════════════════════════════════════════════
+function selectGlobalColor(el, hex, key) {
+  document.querySelectorAll('#global-swatches .swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  globalAccentHex = hex;
+  globalAccentKey = key;
+}
+
+function applyTemplate() {
+  const n = document.getElementById('niche').value;
+  if (TEMPLATES[n]) loadTemplate(n);
+}
+
+// ═══════════════════════════════════════════════════════
+// CODE GENERATION
+// ═══════════════════════════════════════════════════════
+function escapePyString(value) {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"""/g, '\\\"\\\"\\\"')
+    .replace(/"/g, "'");
+}
+
+function buildSceneEntry(scene) {
+  const typeMap = { hook:'HOOK', bigstat:'BIGNUM', split:'BULLET', code:'PROMPT', cta:'CTA' };
+  const themeMap = {
+    purple:'PURP', red_hot:'RED', blue_cold:'BLUE', gold:'GOLD', green:'GREEN', purple2:'PURP', orange:'GOLD', white_hot:'BLUE'
+  };
+  const type = typeMap[scene.layout] || 'HOOK';
+  const theme = themeMap[scene.accent] || 'PURP';
+  const narr = escapePyString(scene.narration);
+  const sub = escapePyString(scene.sub);
+  const headLines = scene.head.split('\n').map(l => l.trim()).filter(Boolean);
+
+  if (type === 'HOOK' || type === 'CTA') {
+    const lines = headLines.slice(0, 5).map(line => `        """${escapePyString(line)}"""`).join(',\n');
+    return `    dict(
+        dur=${scene.duration},
+        type="${type}",
+        theme="${theme}",
+        lines=[\n${lines}\n        ],
+        sub="""${sub}""",
+        narr="""${narr}""",
+    ),`;
+  }
+
+  if (type === 'BIGNUM') {
+    const labelLines = headLines.slice(1);
+    const mainLine = headLines[0] || '';
+    const numMatch = mainLine.match(/([$€£]?)([0-9.,]+)([MKm]?)/);
+    let pre = '';
+    let suf = '';
+    let num = 0;
+    let label = labelLines.join(' ') || mainLine;
+    if (numMatch) {
+      pre = numMatch[1] || '';
+      const raw = numMatch[2].replace(/,/g, '');
+      num = parseInt(raw, 10) || 0;
+      const suffix = numMatch[3].toUpperCase();
+      if (suffix === 'M' || suffix === 'K') suf = suffix;
+      if (!labelLines.length) label = mainLine.replace(numMatch[0], '').trim() || mainLine;
+    }
+    if (!label) label = mainLine;
+    return `    dict(
+        dur=${scene.duration},
+        type="${type}",
+        theme="${theme}",
+        label="""${escapePyString(label)}""",
+        num=${num},
+        pre="${pre}",
+        suf="${suf}",
+        sub="""${sub}""",
+        narr="""${narr}""",
+    ),`;
+  }
+
+  if (type === 'BULLET') {
+    const bullets = sub.split('\n').map(line => line.trim()).filter(Boolean).map(line => `        """${escapePyString(line)}"""`).join(',\n');
+    return `    dict(
+        dur=${scene.duration},
+        type="${type}",
+        theme="${theme}",
+        title="""${escapePyString(headLines.join(' '))}""",
+        bullets=[\n${bullets}\n        ],
+        sub="""${sub}""",
+        narr="""${narr}""",
+    ),`;
+  }
+
+  if (type === 'PROMPT') {
+    const codeLines = sub.split('\n').map(line => line.trim()).filter(Boolean).map(line => `        """${escapePyString(line)}"""`).join(',\n');
+    return `    dict(
+        dur=${scene.duration},
+        type="${type}",
+        theme="${theme}",
+        title="""${escapePyString(headLines.join(' '))}""",
+        code=[\n${codeLines}\n        ],
+        narr="""${narr}""",
+    ),`;
+  }
+
+  return `    dict(
+        dur=${scene.duration},
+        type="HOOK",
+        theme="${theme}",
+        lines=[\n        """${escapePyString(headLines.join(' '))}"""\n        ],
+        sub="""${sub}""",
+        narr="""${narr}""",
+    ),`;
+}
+
+function generateColab() {
+  if (!scenes.length) { showToast('⚠️ Add scenes first!'); return; }
+
+  const res   = document.getElementById('resolution').value.split('x');
+  const W     = res[0], H = res[1];
+  const fps   = document.getElementById('fps').value;
+  const lang  = document.getElementById('lang').value;
+  const spd   = document.getElementById('voice_speed').value;
+  const crf   = document.getElementById('quality').value;
+  const fname = (document.getElementById('output_name').value || 'my_shorts_video').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  const scenePy = scenes.map(buildSceneEntry).join('\n');
+
+  document.getElementById('cell1').textContent = genCell1();
+  document.getElementById('cell2').textContent = genCell2(W,H,fps,lang,spd,scenePy,fname);
+  document.getElementById('cell3').textContent = genCell3();
+  document.getElementById('cell4').textContent = genCell4();
+  document.getElementById('cell5').textContent = genCell5(crf,fname,lang);
+
+  switchTab('colab');
+  showToast('✅ Colab cells generated! Copy each cell.');
+}
+
+function genCell1() {
+return `# ================================================================
+# CELL 1: SETUP (FIXED FONT DOWNLOAD)
+# ================================================================
+!apt-get install -y imagemagick ffmpeg -q
+!pip install -q Pillow numpy opencv-python-headless gTTS requests
+
+import subprocess, os, urllib.request, math, time
+import numpy as np, cv2
+from PIL import Image, ImageDraw, ImageFont
+
+os.makedirs("/fonts", exist_ok=True)
+
+# ── Download Montserrat via direct CDN links (jsDelivr — always stable)
+fonts = {
+    "Black":     "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Black.ttf",
+    "Bold":      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Bold.ttf",
+    "SemiBold":  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-SemiBold.ttf",
+    "Regular":   "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Regular.ttf",
+    "ExtraBold": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-ExtraBold.ttf",
+}
+
+for name, url in fonts.items():
+    path = f"/fonts/Montserrat-{name}.ttf"
+    try:
+        urllib.request.urlretrieve(url, path)
+        print(f"✅ Montserrat-{name}")
+    except Exception as e:
+        print(f"⚠️  CDN failed for {name}: {e}")
+
+missing = [n for n in fonts if not os.path.exists(f"/fonts/Montserrat-{n}.ttf")]
+if missing:
+    print(f"\n⚠️  Missing: {missing} — trying pip fallback...")
+    subprocess.run("pip install -q fonttools", shell=True)
+    subprocess.run("apt-get install -y fonts-open-sans -q", shell=True)
+    import glob
+    sys_fonts = glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
+    bold_fallback = next((f for f in sys_fonts if "Bold" in f), sys_fonts[0] if sys_fonts else None)
+    for n in missing:
+        if bold_fallback:
+            os.symlink(bold_fallback, f"/fonts/Montserrat-{n}.ttf")
+            print(f"   Linked fallback for {n}")
+else:
+    print("\n✅ All fonts ready")
+
+# ── Fix ImageMagick policy
+subprocess.run("""cat > /etc/ImageMagick-6/policy.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<policymap>
+  <policy domain="resource" name="memory" value="512MiB"/>
+  <policy domain="resource" name="map" value="1GiB"/>
+  <policy domain="resource" name="width" value="16KP"/>
+  <policy domain="resource" name="height" value="16KP"/>
+  <policy domain="resource" name="disk" value="4GiB"/>
+</policymap>
+EOF""", shell=True)
+
+try:
+    import cupy as cp; USE_GPU=True; print("✅ CuPy GPU ON")
+except:
+    USE_GPU=False; print("⚠️  CPU mode")
+
+XP = cp if USE_GPU else np
+
+# ── Quick font test
+try:
+    from PIL import ImageFont
+    test = ImageFont.truetype("/fonts/Montserrat-Black.ttf", 40)
+    print("✅ Font load test passed")
+except Exception as e:
+    print(f"⚠️  Font test failed: {e}")
+
+print("\n✅ Cell 1 complete — run Cell 2 now")`;
+}
+
+function genCell2(W,H,fps,lang,spd,scenePy,fname) {
+return `# ================================================================
+# CELL 2: CONFIG — FIXED LAYOUT SYSTEM
+# ================================================================
+W, H = ${W}, ${H}
+FPS  = ${fps}
+LANG = "${lang}"
+VOICE_SPEED = ${spd}
+OUT  = "${fname}"
+
+THEMES = {
+    "RED":   {"bg":(10,3,5),   "mid":(22,6,10),  "acc":(255,40,80),   "acc2":(255,130,50), "txt":(255,252,248)},
+    "BLUE":  {"bg":(3,5,18),   "mid":(6,10,32),  "acc":(45,125,255),  "acc2":(100,200,255),"txt":(242,246,255)},
+    "GOLD":  {"bg":(12,8,0),   "mid":(22,14,2),  "acc":(255,190,0),   "acc2":(255,110,0),  "txt":(255,252,232)},
+    "GREEN": {"bg":(3,12,5),   "mid":(5,22,8),   "acc":(30,210,90),   "acc2":(140,255,70), "txt":(240,255,244)},
+    "PURP":  {"bg":(8,3,16),   "mid":(14,5,28),  "acc":(160,70,255),  "acc2":(255,70,190), "txt":(250,242,255)},
+}
+
+SCENES = [
+${scenePy}
+]
+
+print(f"✅ {len(SCENES)} scenes — {sum(s['dur'] for s in SCENES)}s")`;
+}
+
+function genCell3() {
+return `# ================================================================
+# CELL 3: FIXED RENDER ENGINE — correct layout math
+# ================================================================
+import math, time, os, subprocess
+import numpy as np, cv2
+from PIL import Image, ImageDraw, ImageFont
+
+def easeOutExpo(t): return 1-2**(-10*t) if t>0 else 0
+
+def easeOutBack(t,s=1.4): return 1+(s+1)*(t-1)**3+s*(t-1)**2
+
+def easeInOut(t): return t*t*(3-2*t)
+
+def sceneAlpha(fi,nf,fin=6,fout=6): return easeInOut(min(fi/fin,1.0,(nf-fi)/fout))
+
+# ── GPU BG ────────────────────────────────────────────────────────
+def make_bg(theme, fi, nf):
+    t=fi/FPS; xp=XP; bg=THEMES[theme]
+    c1,c2,acc,acc2=bg['bg'],bg['mid'],bg['acc'],bg['acc2']
+    x=xp.linspace(0,1,W,dtype=xp.float32)
+    y=xp.linspace(0,1,H,dtype=xp.float32)
+    xx,yy=xp.meshgrid(x,y)
+    g=yy*0.75+xx*0.25
+    R=c1[0]/255*(1-g)+c2[0]/255*g
+    G=c1[1]/255*(1-g)+c2[1]/255*g
+    B=c1[2]/255*(1-g)+c2[2]/255*g
+    p1=0.20+0.07*xp.sin(xp.array(t*2.3,dtype=xp.float32))
+    g1=xp.exp(-((xx-0.1)**2)/0.28)*xp.exp(-((yy-0.95)**2)/0.20)*p1
+    R=xp.clip(R+g1*acc[0]/255,0,1)
+    G=xp.clip(G+g1*acc[1]/255,0,1)
+    B=xp.clip(B+g1*acc[2]/255,0,1)
+    p2=0.10+0.04*xp.sin(xp.array(t*1.7+1.0,dtype=xp.float32))
+    g2=xp.exp(-((xx-0.9)**2)/0.3)*xp.exp(-((yy-0.05)**2)/0.18)*p2
+    R=xp.clip(R+g2*acc2[0]/255,0,1)
+    G=xp.clip(G+g2*acc2[1]/255,0,1)
+    B=xp.clip(B+g2*acc2[2]/255,0,1)
+    sy=(t*0.15)%1.0
+    sw=xp.exp(-((yy-sy)**2)/0.005)*0.045
+    R=xp.clip(R+sw*acc[0]/255,0,1)
+    G=xp.clip(G+sw*acc[1]/255,0,1)
+    B=xp.clip(B+sw*acc[2]/255,0,1)
+    vig=xp.clip(1-((xx-0.5)**2+(yy-0.5)**2)*2.0,0.05,1)
+    grain=(xp.random.random((H,W)).astype(xp.float32)-0.5)*0.016
+    R=xp.clip(R*vig+grain,0,1)
+    G=xp.clip(G*vig+grain,0,1)
+    B=xp.clip(B*vig+grain,0,1)
+    arr=xp.stack([B,G,R],axis=-1)
+    if USE_GPU: arr=arr.get()
+    return (arr*255).astype(np.uint8)
+
+# ── TEXT UTILS ────────────────────────────────────────────────────
+def tbbox(draw,text,font):
+    bb=draw.textbbox((0,0),text,font=font); return bb[2]-bb[0],bb[3]-bb[1]
+
+def cxf(draw,text,font):
+    w,_=tbbox(draw,text,font); return (W-w)//2
+
+def outlined(draw,x,y,text,font,fill,stroke=(0,0,0),sw=5,alpha=255):
+    for dx in range(-sw,sw+1):
+        for dy in range(-sw,sw+1):
+            if dx*dx+dy*dy<=sw*sw:
+                draw.text((x+dx,y+dy),text,font=font,fill=(*stroke,int(alpha*0.85)))
+    draw.text((x,y),text,font=font,fill=(*fill,alpha))
+
+def glowed(draw,x,y,text,font,fill,acc,alpha=255):
+    for off,op in [(16,12),(9,28),(4,55),(2,80)]:
+        draw.text((x+off,y+off),text,font=font,fill=(*acc,int(op/100*alpha)))
+    outlined(draw,x,y,text,font,fill=fill,sw=5,alpha=alpha)
+
+def caption(draw,narr,fi,nf,theme):
+    words=narr.split(); wps=max(len(words)/(nf/FPS),1)
+    n=min(int(fi/FPS*wps)+1,len(words))
+    chunk=(n-1)//3; show=" ".join(words[chunk*3:chunk*3+3])
+    if not show.strip(): return
+    acc=THEMES[theme]['acc']
+    fnt=F(72,"Bold"); w_,h_=tbbox(draw,show,fnt)
+    cx=(W-w_)//2; cy=H-320; pad=24
+    draw.rounded_rectangle([cx-pad,cy-16,cx+w_+pad,cy+h_+16],radius=16,fill=(0,0,0,215))
+    draw.rounded_rectangle([cx-pad,cy-16,cx-pad+7,cy+h_+16],radius=3,fill=(*acc,255))
+    outlined(draw,cx,cy,show,fnt,fill=(255,255,255),sw=3,alpha=255)
+
+# ── SCENE RENDERERS ───────────────────────────────────────────────
+def F(size, weight="Bold"):
+    try:    return ImageFont.truetype(f"/fonts/Montserrat-{weight}.ttf", size)
+    except: return ImageFont.load_default()
+
+def scene_HOOK(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+    lines=scene['lines']
+    line_h=185
+    total=len(lines)*line_h
+    start_y=(H-total)//2 - 80
+    for i,line in enumerate(lines):
+        delay=i*5
+        entry=easeOutBack(min(max(fi-delay,0)/14,1.0))
+        a=int(min(alpha,entry)*255)
+        dy=int((1-entry)*70)
+        sz=160 if i<2 else 140
+        fnt=F(sz,"Black")
+        x=cxf(draw,line,fnt); y=start_y+i*line_h+dy
+        if i==0:
+            w_,h_=tbbox(draw,line,fnt)
+            bar_a=int(entry*alpha*200)
+            draw.rectangle([x-12,y-4,x+w_+12,y+h_+4],fill=(*acc,bar_a))
+        outlined(draw,x,y,line,fnt,fill=txt,stroke=(0,0,0),sw=6,alpha=a)
+    ul_e=easeOutExpo(min(max(fi-22,0)/12,1.0))
+    if ul_e>0:
+        uw=int(ul_e*600); ux=(W-600)//2
+        uy=start_y+len(lines)*line_h+10
+        draw.rectangle([ux,uy,ux+uw,uy+8],fill=(*acc,int(ul_e*alpha*255)))
+    sub_e=easeOutExpo(min(max(fi-20,0)/10,1.0))
+    if sub_e>0:
+        fnt_s=F(62,"Bold")
+        sub_y=start_y+len(lines)*line_h+36
+        x_s=cxf(draw,scene['sub'],fnt_s)
+        outlined(draw,x_s,sub_y,scene['sub'],fnt_s,fill=acc,sw=3,alpha=int(min(alpha,sub_e)*255))
+
+def scene_BIGNUM(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+    fnt_l=F(76,"Bold")
+    le=easeOutExpo(min(fi/10,1.0)); la=int(min(alpha,le)*255)
+    ldy=int((1-le)*40)
+    outlined(draw,cxf(draw,scene['label'],fnt_l),240+ldy,scene['label'],fnt_l,fill=txt,sw=4,alpha=la)
+    sp=easeOutExpo(min(max(fi-6,0)/12,1.0))
+    sw_=int(sp*560); sx=(W-560)//2
+    draw.rectangle([sx,370,sx+sw_,378],fill=(*acc,int(sp*la)))
+    prog=easeOutExpo(min(max(fi-2,0)/(nf*0.78),1.0))
+    val=int(scene['num']*prog)
+    numstr=f"{scene['pre']}{val:,}{scene['suf']}"
+    fsz=190 if len(numstr)<=6 else 160 if len(numstr)<=8 else 138
+    fnt_n=F(fsz,"Black")
+    ne=easeOutBack(min(max(fi-2,0)/16,1.0)); na=int(min(alpha,ne)*255)
+    ndy=int((1-ne)*50)
+    xn=cxf(draw,numstr,fnt_n)
+    glowed(draw,xn,420+ndy,numstr,fnt_n,fill=txt,acc=acc,alpha=na)
+    se=easeOutExpo(min(max(fi-24,0)/10,1.0)); sa=int(min(alpha,se)*255)
+    if sa>10:
+        fnt_s=F(56,"SemiBold")
+        w_,h_=tbbox(draw,scene['sub'],fnt_s)
+        sx2=(W-w_)//2; sy=790
+        draw.rounded_rectangle([sx2-24,sy-14,sx2+w_+24,sy+h_+14],radius=14,fill=(*acc2,int(sa*0.22)))
+        draw.rounded_rectangle([sx2-24,sy-14,sx2+w_+24,sy+h_+14],radius=14,outline=(*acc2,int(sa*0.7)),width=2)
+        outlined(draw,sx2,sy,scene['sub'],fnt_s,fill=acc2,sw=3,alpha=sa)
+
+def scene_BULLET(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+    fnt_t=F(104,"Black")
+    te=easeOutExpo(min(fi/10,1.0)); ta=int(min(alpha,te)*255)
+    outlined(draw,cxf(draw,scene['title'],fnt_t),160,scene['title'],fnt_t,fill=txt,sw=5,alpha=ta)
+    ule=easeOutExpo(min(max(fi-8,0)/10,1.0))
+    if ule>0:
+        w_,_=tbbox(draw,scene['title'],fnt_t)
+        ux=cxf(draw,scene['title'],fnt_t)
+        draw.rectangle([ux,295,ux+int(w_*ule),305],fill=(*acc,int(ule*ta)))
+    fnt_b=F(60,"SemiBold")
+    n_bullets=len(scene['bullets'])
+    slot=(1600-320)//n_bullets
+    start_y=340
+    for i,text in enumerate(scene['bullets']):
+        delay=i*7
+        be=easeOutBack(min(max(fi-delay,0)/13,1.0))
+        ba=int(min(alpha,be)*255)
+        bdy=int((1-be)*100)
+        if ba<5: continue
+        by=start_y+i*slot+bdy
+        bh=slot-20
+        draw.rounded_rectangle([44,by,W-44,by+bh],radius=18,fill=(0,0,0,int(ba*0.55)))
+        draw.rounded_rectangle([44,by,W-44,by+bh],radius=18,outline=(*acc,int(ba*0.35)),width=2)
+        draw.rounded_rectangle([44,by,60,by+bh],radius=9,fill=(*acc,ba))
+        w_,h_=tbbox(draw,text,fnt_b)
+        tx=80; ty=by+(bh-h_)//2
+        outlined(draw,tx,ty,text,fnt_b,fill=txt,sw=3,alpha=ba)
+
+def scene_PROMPT(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf); t=fi/FPS
+    fnt_t=F(96,"Black")
+    te=easeOutExpo(min(fi/10,1.0)); ta=int(min(alpha,te)*255)
+    outlined(draw,cxf(draw,scene['title'],fnt_t),170,scene['title'],fnt_t,fill=txt,sw=5,alpha=ta)
+    by1=330; by2=1420
+    be=easeOutExpo(min(max(fi-6,0)/14,1.0)); ba=int(min(alpha,be)*255)
+    draw.rounded_rectangle([44,by1,W-44,by2],radius=26,fill=(4,10,22,int(ba*0.93)))
+    draw.rounded_rectangle([44,by1,W-44,by2],radius=26,outline=(*acc,ba),width=3)
+    draw.rounded_rectangle([44,by1,W-44,by1+54],radius=26,fill=(8,18,38,ba))
+    draw.rectangle([44,by1+27,W-44,by1+54],fill=(8,18,38,ba))
+    for bx,col in [(82,(255,75,75)),(122,(255,190,45)),(162,(45,195,75))]:
+        draw.ellipse([bx-12,by1+17,bx+12,by1+37],fill=(*col,ba))
+    draw.text((192,by1+16),"AI Prompt — Copy & Paste",font=F(36,"SemiBold"),fill=(*acc,ba))
+    fnt_c=F(52,"Regular"); line_h=155
+    chars_ps=24; total=sum(len(l) for l in scene['code'])
+    shown_c=min(int(t*chars_ps),total)
+    count=0; ty=by1+72
+    for li,line in enumerate(scene['code']):
+        if count>=shown_c: break
+        chunk=line[:max(0,shown_c-count)]
+        w_,_=tbbox(draw,chunk,fnt_c)
+        col=acc2 if '$' in chunk or 'discount' in chunk.lower() else (170,205,255)
+        draw.text((80,ty),chunk,font=fnt_c,fill=(*col,ba))
+        if count+len(line)>=shown_c and int(t*2)%2==0:
+            draw.rectangle([80+w_,ty+6,83+w_,ty+48],fill=(*acc,ba))
+        count+=len(line); ty+=line_h
+
+def scene_CTA(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf); t=fi/FPS
+    cy_ring=H//2-100
+    for ri,(br,ph) in enumerate([(300,0),(380,0.7),(460,1.4)]):
+        rp=(t*0.75+ph)%2/2
+        rr=int(br+rp*90); ra=int((1-rp)*55)
+        if ra>2:
+            draw.ellipse([W//2-rr,cy_ring-rr,W//2+rr,cy_ring+rr],outline=(*acc,ra),width=3)
+    cols=[txt,acc,acc2]; szs=[164,172,76]; wts=["Black","Black","ExtraBold"]
+    line_hs=[180,190,90]; start_y=cy_ring-240
+    sy=start_y
+    for i,(line,sz,wt,col,lh) in enumerate(zip(scene['lines'],szs,wts,cols,line_hs)):
+        delay=i*5
+        be=easeOutBack(min(max(fi-delay,0)/13,1.0))
+        ba=int(min(alpha,be)*255)
+        bounce=int(math.sin(t*3.2+i)*9)
+        fnt=F(sz,wt)
+        x=cxf(draw,line,fnt)
+        for off,op in [(12,12),(6,32),(2,65)]:
+            draw.text((x+off,sy+bounce+off),line,font=fnt,fill=(*acc,int(op/100*ba)))
+        outlined(draw,x,sy+bounce,line,fnt,fill=col,sw=6,alpha=ba)
+        sy+=lh
+    fnt_s=F(60,"SemiBold")
+    se=easeOutExpo(min(max(fi-18,0)/10,1.0)); sa=int(min(alpha,se)*255)
+    outlined(draw,cxf(draw,scene['sub'],fnt_s),sy+20,scene['sub'],fnt_s,fill=acc2,sw=3,alpha=sa)
+
+RENDERERS={"HOOK":scene_HOOK,"BIGNUM":scene_BIGNUM,
+           "BULLET":scene_BULLET,"PROMPT":scene_PROMPT,"CTA":scene_CTA}
+
+def compose(scene,fi,nf):
+    bg=make_bg(scene['theme'],fi,nf)
+    img=Image.fromarray(cv2.cvtColor(bg,cv2.COLOR_BGR2RGB)).convert("RGBA")
+    draw=ImageDraw.Draw(img,"RGBA")
+    RENDERERS[scene['type']](draw,scene,fi,nf)
+    caption(draw,scene['narr'],fi,nf,scene['theme'])
+    acc=THEMES[scene['theme']]['acc']
+    draw.rectangle([0,H-9,W,H],fill=(15,15,20,255))
+    draw.rectangle([0,H-9,int(W*fi/nf),H],fill=(*acc,255))
+    return cv2.cvtColor(np.array(img.convert("RGB")),cv2.COLOR_RGB2BGR)
+
+print("✅ Fixed render engine ready")`;
+}
+
+function genCell4() {
+return `# ================================================================
+# CELL 4: RENDER
+# ================================================================
+RAW="raw_fixed.mp4"
+out=cv2.VideoWriter(RAW,cv2.VideoWriter_fourcc(*'mp4v'),FPS,(W,H))
+total_f=0; t0=time.time()
+print(f"🎬 Rendering {sum(s['dur'] for s in SCENES)*FPS} frames...\n")
+
+for si,scene in enumerate(SCENES):
+    nf=int(scene['dur']*FPS); t1=time.time()
+    print(f"  [{si+1}/{len(SCENES)}] {scene['type']:7}|{scene['theme']:5}| {nf}f",end="  ")
+    for fi in range(nf):
+        out.write(compose(scene,fi,nf)); total_f+=1
+    print(f"✅ {nf/(time.time()-t1):.0f}fps")
+
+out.release()
+e=time.time()-t0
+print(f"\n✅ {total_f}f in {e:.1f}s — {total_f/e:.1f}fps avg | {'GPU' if USE_GPU else 'CPU'}")`;
+
+}
+
+function genCell5(crf, fname) {
+return `# ================================================================
+# CELL 5: AUDIO + MERGE + DOWNLOAD
+# ================================================================
+from gtts import gTTS
+full = " ".join(s['narr'] for s in SCENES)
+print("🎙 Generating narration...")
+gTTS(text=full,lang=LANG,slow=False,tld='com').save("narr_raw.mp3")
+
+subprocess.run(["ffmpeg","-y","-i","narr_raw.mp3",
+    "-filter_complex",
+    "atempo=0.91,highpass=f=100,"
+    "equalizer=f=300:t=o:w=1:g=-4,"
+    "equalizer=f=3000:t=o:w=1:g=5,"
+    "equalizer=f=9000:t=o:w=1:g=3,"
+    "aecho=1.0:0.5:22:0.1,"
+    "pan=stereo|c0=c0|c1=c0",
+    "-ar","44100","-b:a","192k","narr.mp3"],capture_output=True)
+
+def dur(p):
+    r=subprocess.run(['ffprobe','-v','error','-show_entries','format=duration',
+        '-of','default=noprint_wrappers=1:nokey=1',p],capture_output=True,text=True)
+    return float(r.stdout.strip())
+
+vd,ad=dur("raw_fixed.mp4"),dur("narr.mp3")
+print(f"Video {vd:.1f}s | Audio {ad:.1f}s")
+
+subprocess.run(["ffmpeg","-y","-i","raw_fixed.mp4","-i","narr.mp3",
+    "-c:v","libx264","-preset","slow","-crf",str(${crf}),"-pix_fmt","yuv420p",
+    "-c:a","aac","-b:a","256k","-ac","2",
+    "-shortest","-movflags","+faststart",
+    "${fname}.mp4"],capture_output=True)
+
+fs=os.path.getsize("${fname}.mp4")/1024/1024
+print(f"\n✅ ${fname}.mp4 — {dur('${fname}.mp4'):.1f}s — {fs:.1f}MB")
+from google.colab import files
+files.download("${fname}.mp4")`;
+}
+
+
+// ═══════════════════════════════════════════════════════
+// COPY / DOWNLOAD
+// ═══════════════════════════════════════════════════════
+function copyCell(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast(`✅ ${id.toUpperCase()} copied!`));
+}
+
+function copyColab() {
+  generateColab();
+  const allCells = ['cell1','cell2','cell3','cell4','cell5']
+    .map(id => `# ==================== ${id.toUpperCase()} ====================\n` +
+               document.getElementById(id).textContent)
+    .join('\n\n\n');
+  navigator.clipboard.writeText(allCells).then(()=>showToast('✅ All cells copied to clipboard!'));
+}
+
+function downloadAll() {
+  generateColab();
+
+  // Build the .py file content
+  const cells = ['cell1','cell2','cell3','cell4','cell5'];
+  const pyContent = cells.map((id,i) =>
+    `# ${'='.repeat(60)}\n# CELL ${i+1}: Copy this into Colab Cell ${i+1}\n# ${'='.repeat(60)}\n\n` +
+    document.getElementById(id).textContent
+  ).join('\n\n\n');
+
+  // Create instructions text
+  const instructions = `SHORTS STUDIO — COLAB INSTRUCTIONS
+=====================================
+
+QUICK START
+-----------
+1. Open https://colab.research.google.com
+2. Create a new notebook
+3. Set GPU: Runtime → Change runtime type → T4 GPU → Save
+4. Create 5 code cells
+5. Copy each CELL block from colab_cells.py into the matching cell
+6. Run all cells top to bottom (Shift+Enter each)
+7. Cell 5 will download your MP4 automatically
+
+FILES IN THIS PACKAGE
+---------------------
+studio.html      — Open this in your browser to design videos
+colab_cells.py   — Pre-generated Colab code for your current video
+instructions.txt — This file
+
+TIPS
+----
+- Cell 1 takes ~2 minutes (installs packages). Run it once per session.
+- Cell 2 is your video config. Edit scenes here if needed.
+- If Colab disconnects, re-run Cell 1 first, then jump to Cell 5.
+- For a new video, go back to studio.html, redesign, regenerate, paste Cell 2 only.
+- GPU renders ~80-120fps. CPU fallback ~15-25fps.
+
+RENDER TIME ESTIMATES
+---------------------
+15s video (5 scenes × 3s) → ~2-4 min
+28s video (7 scenes × 4s) → ~4-7 min
+30s video (10 scenes × 3s) → ~5-8 min
+
+TROUBLESHOOTING
+---------------
+"No module named cupy"     → Normal on CPU, will still work
+"ImageMagick error"        → Re-run Cell 1
+"CUDA out of memory"       → Reduce resolution or scene count
+"gTTS connection error"    → Check Colab internet connection
+
+Generated by Shorts Studio — ${new Date().toLocaleString()}
+`;
+
+  // Download colab_cells.py
+  triggerDownload('colab_cells.py', pyContent);
+  setTimeout(() => triggerDownload('instructions.txt', instructions), 300);
+  showToast('⬇ Downloading package (2 files)...');
+}
+
+function triggerDownload(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST + MISC
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function resetAll() {
+  if (!confirm('Reset everything?')) return;
+  scenes = [];
+  renderSceneList();
+  updateStats();
+  showToast('↺ Reset complete');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+loadTemplate('finance');
+updateStats();
+updatePreview();
+document.getElementById('resolution').addEventListener('change', updateStats);
+</script>
+</body>
+</html>
