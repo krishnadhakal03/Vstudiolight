@@ -1,0 +1,23 @@
+# Ignore generated media and temporary render files
+*.mp4
+*.mp3
+*.wav
+*.m4a
+*.avi
+*.mov
+*.tmp
+*.temp
+*temp*
+*render*
+
+# Python cache and environment
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.env
+.env.*
+
+# OS and editor files
+.DS_Store
+Thumbs.db

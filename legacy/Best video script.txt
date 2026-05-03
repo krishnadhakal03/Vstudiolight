@@ -1,0 +1,516 @@
+# ================================================================
+# CELL 1: SETUP (FIXED FONT DOWNLOAD)
+# ================================================================
+!apt-get install -y imagemagick ffmpeg -q
+!pip install -q Pillow numpy opencv-python-headless gTTS requests
+
+import subprocess, os, urllib.request, math, time
+import numpy as np, cv2
+from PIL import Image, ImageDraw, ImageFont
+
+os.makedirs("/fonts", exist_ok=True)
+
+# ── Download Montserrat via direct CDN links (jsDelivr — always stable)
+fonts = {
+    "Black":     "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Black.ttf",
+    "Bold":      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Bold.ttf",
+    "SemiBold":  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-SemiBold.ttf",
+    "Regular":   "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-Regular.ttf",
+    "ExtraBold": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/montserrat/static/Montserrat-ExtraBold.ttf",
+}
+
+for name, url in fonts.items():
+    path = f"/fonts/Montserrat-{name}.ttf"
+    try:
+        urllib.request.urlretrieve(url, path)
+        print(f"✅ Montserrat-{name}")
+    except Exception as e:
+        print(f"⚠️  CDN failed for {name}: {e}")
+
+# ── Verify fonts downloaded
+missing = [n for n in fonts if not os.path.exists(f"/fonts/Montserrat-{n}.ttf")]
+if missing:
+    print(f"\n⚠️  Missing: {missing} — trying pip fallback...")
+    # Fallback: install via system package
+    subprocess.run("pip install -q fonttools", shell=True)
+    subprocess.run("apt-get install -y fonts-open-sans -q", shell=True)
+    # Map missing to Open Sans (very similar to Montserrat)
+    import glob
+    sys_fonts = glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
+    bold_fallback = next((f for f in sys_fonts if "Bold" in f), sys_fonts[0] if sys_fonts else None)
+    for n in missing:
+        if bold_fallback:
+            os.symlink(bold_fallback, f"/fonts/Montserrat-{n}.ttf")
+            print(f"   Linked fallback for {n}")
+else:
+    print("\n✅ All fonts ready")
+
+# ── Fix ImageMagick policy
+subprocess.run("""cat > /etc/ImageMagick-6/policy.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<policymap>
+  <policy domain="resource" name="memory" value="512MiB"/>
+  <policy domain="resource" name="map" value="1GiB"/>
+  <policy domain="resource" name="width" value="16KP"/>
+  <policy domain="resource" name="height" value="16KP"/>
+  <policy domain="resource" name="disk" value="4GiB"/>
+</policymap>
+EOF""", shell=True)
+
+try:
+    import cupy as cp; USE_GPU=True; print("✅ CuPy GPU ON")
+except: USE_GPU=False; print("⚠️  CPU mode")
+
+XP = cp if USE_GPU else np
+
+# ── Quick font test
+try:
+    from PIL import ImageFont
+    test = ImageFont.truetype("/fonts/Montserrat-Black.ttf", 40)
+    print("✅ Font load test passed")
+except Exception as e:
+    print(f"⚠️  Font test failed: {e}")
+
+print("\n✅ Cell 1 complete — run Cell 2 now")
+
+
+# ================================================================
+# CELL 2: CONFIG — FIXED LAYOUT SYSTEM
+# ================================================================
+W, H = 1080, 1920
+FPS  = 30
+
+def F(size, weight="Bold"):
+    try:    return ImageFont.truetype(f"/fonts/Montserrat-{weight}.ttf", size)
+    except: return ImageFont.load_default()
+
+THEMES = {
+    "RED":   {"bg":(10,3,5),   "mid":(22,6,10),  "acc":(255,40,80),   "acc2":(255,130,50), "txt":(255,252,248)},
+    "BLUE":  {"bg":(3,5,18),   "mid":(6,10,32),  "acc":(45,125,255),  "acc2":(100,200,255),"txt":(242,246,255)},
+    "GOLD":  {"bg":(12,8,0),   "mid":(22,14,2),  "acc":(255,190,0),   "acc2":(255,110,0),  "txt":(255,252,232)},
+    "GREEN": {"bg":(3,12,5),   "mid":(5,22,8),   "acc":(30,210,90),   "acc2":(140,255,70), "txt":(240,255,244)},
+    "PURP":  {"bg":(8,3,16),   "mid":(14,5,28),  "acc":(160,70,255),  "acc2":(255,70,190), "txt":(250,242,255)},
+}
+
+SCENES = [
+    {"dur":3,  "type":"HOOK",   "theme":"RED",
+     "lines":["YOUR CAR","INSURANCE","JUST RENEWED."],
+     "sub":"↑ That was their plan.",
+     "narr":"Your car insurance renewed automatically. That was their plan. Not yours."},
+
+    {"dur":3,  "type":"BIGNUM", "theme":"BLUE",
+     "label":"AVERAGE AMERICAN PAYS",
+     "num":2144, "pre":"$", "suf":"/yr",
+     "sub":"UP 46% since 2022",
+     "narr":"The average American pays over two thousand dollars a year. Up 46 percent since 2022."},
+
+    {"dur":3,  "type":"BIGNUM", "theme":"GOLD",
+     "label":"DRIVERS AFFECTED",
+     "num":242, "pre":"", "suf":"M",
+     "sub":"58% believe they overpay",
+     "narr":"242 million drivers. 58 percent believe they are overpaying. They are right."},
+
+    {"dur":4,  "type":"BULLET", "theme":"RED",
+     "title":"WHY YOU'RE STUCK",
+     "bullets":["Auto-renewal locks you in","Insurers profit from loyalty",
+                "Discounts never offered","Switching feels complicated"],
+     "narr":"Auto-renewal traps you. Insurers profit from loyalty. They will never offer you a better rate."},
+
+    {"dur":3,  "type":"BIGNUM", "theme":"GREEN",
+     "label":"YOU OVERPAY EVERY YEAR",
+     "num":368, "pre":"$", "suf":"",
+     "sub":"Switchers save $461/yr",
+     "narr":"The average driver overpays 368 dollars every year. Switchers save 461 dollars."},
+
+    {"dur":5,  "type":"PROMPT", "theme":"BLUE",
+     "title":"PASTE INTO AI →",
+     "code":['I pay $[X]/month with [carrier].',
+             'Clean record, <10K miles/yr.',
+             'List every discount I qualify',
+             'for + negotiation script.'],
+     "narr":"Paste this into Claude or ChatGPT. It finds every hidden discount and writes your script."},
+
+    {"dur":3,  "type":"CTA",   "theme":"PURP",
+     "lines":['COMMENT',' "CAR" ','👇 FREE CHECKLIST'],
+     "sub":"Save for your renewal day",
+     "narr":"Comment CAR below for the complete discount checklist. Save this video."},
+]
+
+print(f"✅ {len(SCENES)} scenes — {sum(s['dur'] for s in SCENES)}s")
+
+
+# ================================================================
+# CELL 3: FIXED RENDER ENGINE — correct layout math
+# ================================================================
+import math, time, os, subprocess
+import numpy as np, cv2
+from PIL import Image, ImageDraw, ImageFont
+
+def easeOutExpo(t): return 1-2**(-10*t) if t>0 else 0
+def easeOutBack(t,s=1.4): return 1+(s+1)*(t-1)**3+s*(t-1)**2
+def easeInOut(t): return t*t*(3-2*t)
+def sceneAlpha(fi,nf,fin=6,fout=6): return easeInOut(min(fi/fin,1.0,(nf-fi)/fout))
+
+# ── GPU BG ────────────────────────────────────────────────────────
+def make_bg(theme, fi, nf):
+    t=fi/FPS; xp=XP; bg=THEMES[theme]
+    c1,c2,acc,acc2=bg['bg'],bg['mid'],bg['acc'],bg['acc2']
+    x=xp.linspace(0,1,W,dtype=xp.float32)
+    y=xp.linspace(0,1,H,dtype=xp.float32)
+    xx,yy=xp.meshgrid(x,y)
+    g=yy*0.75+xx*0.25
+    R=c1[0]/255*(1-g)+c2[0]/255*g
+    G=c1[1]/255*(1-g)+c2[1]/255*g
+    B=c1[2]/255*(1-g)+c2[2]/255*g
+    # bottom-left glow
+    p1=0.20+0.07*xp.sin(xp.array(t*2.3,dtype=xp.float32))
+    g1=xp.exp(-((xx-0.1)**2)/0.28)*xp.exp(-((yy-0.95)**2)/0.20)*p1
+    R=xp.clip(R+g1*acc[0]/255,0,1)
+    G=xp.clip(G+g1*acc[1]/255,0,1)
+    B=xp.clip(B+g1*acc[2]/255,0,1)
+    # top-right glow
+    p2=0.10+0.04*xp.sin(xp.array(t*1.7+1.0,dtype=xp.float32))
+    g2=xp.exp(-((xx-0.9)**2)/0.3)*xp.exp(-((yy-0.05)**2)/0.18)*p2
+    R=xp.clip(R+g2*acc2[0]/255,0,1)
+    G=xp.clip(G+g2*acc2[1]/255,0,1)
+    B=xp.clip(B+g2*acc2[2]/255,0,1)
+    # sweep
+    sy=(t*0.15)%1.0
+    sw=xp.exp(-((yy-sy)**2)/0.005)*0.045
+    R=xp.clip(R+sw*acc[0]/255,0,1)
+    G=xp.clip(G+sw*acc[1]/255,0,1)
+    B=xp.clip(B+sw*acc[2]/255,0,1)
+    # vignette + grain
+    vig=xp.clip(1-((xx-0.5)**2+(yy-0.5)**2)*2.0,0.05,1)
+    grain=(xp.random.random((H,W)).astype(xp.float32)-0.5)*0.016
+    R=xp.clip(R*vig+grain,0,1)
+    G=xp.clip(G*vig+grain,0,1)
+    B=xp.clip(B*vig+grain,0,1)
+    arr=xp.stack([B,G,R],axis=-1)
+    if USE_GPU: arr=arr.get()
+    return (arr*255).astype(np.uint8)
+
+# ── TEXT UTILS ────────────────────────────────────────────────────
+def tbbox(draw,text,font):
+    bb=draw.textbbox((0,0),text,font=font); return bb[2]-bb[0],bb[3]-bb[1]
+def cxf(draw,text,font): w,_=tbbox(draw,text,font); return (W-w)//2
+
+def outlined(draw,x,y,text,font,fill,stroke=(0,0,0),sw=5,alpha=255):
+    # Stroke
+    for dx in range(-sw,sw+1):
+        for dy in range(-sw,sw+1):
+            if dx*dx+dy*dy<=sw*sw:
+                draw.text((x+dx,y+dy),text,font=font,fill=(*stroke,int(alpha*0.85)))
+    draw.text((x,y),text,font=font,fill=(*fill,alpha))
+
+def glowed(draw,x,y,text,font,fill,acc,alpha=255):
+    for off,op in [(16,12),(9,28),(4,55),(2,80)]:
+        draw.text((x+off,y+off),text,font=font,fill=(*acc,int(op/100*alpha)))
+    outlined(draw,x,y,text,font,fill,sw=5,alpha=alpha)
+
+# ── CAPTION ───────────────────────────────────────────────────────
+def caption(draw,narr,fi,nf,theme):
+    words=narr.split(); wps=max(len(words)/(nf/FPS),1)
+    n=min(int(fi/FPS*wps)+1,len(words))
+    chunk=(n-1)//3; show=" ".join(words[chunk*3:chunk*3+3])
+    if not show.strip(): return
+    acc=THEMES[theme]['acc']
+    fnt=F(72,"Bold"); w_,h_=tbbox(draw,show,fnt)
+    cx=(W-w_)//2; cy=H-320; pad=24
+    draw.rounded_rectangle([cx-pad,cy-16,cx+w_+pad,cy+h_+16],radius=16,fill=(0,0,0,215))
+    draw.rounded_rectangle([cx-pad,cy-16,cx-pad+7,cy+h_+16],radius=3,fill=(*acc,255))
+    outlined(draw,cx,cy,show,fnt,fill=(255,255,255),sw=3,alpha=255)
+
+# ── SCENE: HOOK ───────────────────────────────────────────────────
+def scene_HOOK(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+    lines=scene['lines']
+
+    # Layout: 3 big lines centred in screen, total block ~600px
+    line_h=185  # px per line
+    total=len(lines)*line_h
+    start_y=(H-total)//2 - 80  # slightly above centre
+
+    for i,line in enumerate(lines):
+        delay=i*5
+        entry=easeOutBack(min(max(fi-delay,0)/14,1.0))
+        a=int(min(alpha,entry)*255)
+        dy=int((1-entry)*70)
+        # Font size: first two lines bigger
+        sz=160 if i<2 else 140
+        fnt=F(sz,"Black")
+        x=cxf(draw,line,fnt); y=start_y+i*line_h+dy
+
+        # Accent highlight bar behind first line only
+        if i==0:
+            w_,h_=tbbox(draw,line,fnt)
+            bar_a=int(entry*alpha*200)
+            draw.rectangle([x-12,y-4,x+w_+12,y+h_+4],fill=(*acc,bar_a))
+
+        outlined(draw,x,y,line,fnt,fill=txt,stroke=(0,0,0),sw=6,alpha=a)
+
+    # Animated underline
+    ul_e=easeOutExpo(min(max(fi-22,0)/12,1.0))
+    if ul_e>0:
+        uw=int(ul_e*600); ux=(W-600)//2
+        uy=start_y+len(lines)*line_h+10
+        draw.rectangle([ux,uy,ux+uw,uy+8],fill=(*acc,int(ul_e*alpha*255)))
+
+    # Sub text
+    sub_e=easeOutExpo(min(max(fi-20,0)/10,1.0))
+    if sub_e>0:
+        fnt_s=F(62,"Bold")
+        sub_y=start_y+len(lines)*line_h+36
+        x_s=cxf(draw,scene['sub'],fnt_s)
+        outlined(draw,x_s,sub_y,scene['sub'],fnt_s,
+                fill=acc,sw=3,alpha=int(min(alpha,sub_e)*255))
+
+# ── SCENE: BIGNUM ─────────────────────────────────────────────────
+def scene_BIGNUM(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+
+    # Layout zones (vertical thirds of 1920):
+    # Label:   y=240
+    # Sep:     y=370
+    # Number:  y=420–700
+    # Sub:     y=780
+
+    # Label
+    fnt_l=F(76,"Bold")
+    le=easeOutExpo(min(fi/10,1.0)); la=int(min(alpha,le)*255)
+    ldy=int((1-le)*40)
+    outlined(draw,cxf(draw,scene['label'],fnt_l),240+ldy,
+             scene['label'],fnt_l,fill=txt,sw=4,alpha=la)
+
+    # Separator
+    sp=easeOutExpo(min(max(fi-6,0)/12,1.0))
+    sw_=int(sp*560); sx=(W-560)//2
+    draw.rectangle([sx,370,sx+sw_,378],fill=(*acc,int(sp*la)))
+
+    # Counter number
+    prog=easeOutExpo(min(max(fi-2,0)/(nf*0.78),1.0))
+    val=int(scene['num']*prog)
+    numstr=f"{scene['pre']}{val:,}{scene['suf']}"
+    fsz=190 if len(numstr)<=6 else 160 if len(numstr)<=8 else 138
+    fnt_n=F(fsz,"Black")
+    ne=easeOutBack(min(max(fi-2,0)/16,1.0)); na=int(min(alpha,ne)*255)
+    ndy=int((1-ne)*50)
+    xn=cxf(draw,numstr,fnt_n)
+    glowed(draw,xn,420+ndy,numstr,fnt_n,fill=txt,acc=acc,alpha=na)
+
+    # Sub pill
+    se=easeOutExpo(min(max(fi-24,0)/10,1.0)); sa=int(min(alpha,se)*255)
+    if sa>10:
+        fnt_s=F(56,"SemiBold")
+        w_,h_=tbbox(draw,scene['sub'],fnt_s)
+        sx2=(W-w_)//2; sy=790
+        draw.rounded_rectangle([sx2-24,sy-14,sx2+w_+24,sy+h_+14],
+                               radius=14,fill=(*acc2,int(sa*0.22)))
+        draw.rounded_rectangle([sx2-24,sy-14,sx2+w_+24,sy+h_+14],
+                               radius=14,outline=(*acc2,int(sa*0.7)),width=2)
+        outlined(draw,sx2,sy,scene['sub'],fnt_s,fill=acc2,sw=3,alpha=sa)
+
+# ── SCENE: BULLET ─────────────────────────────────────────────────
+def scene_BULLET(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf)
+
+    # Title at top
+    fnt_t=F(104,"Black")
+    te=easeOutExpo(min(fi/10,1.0)); ta=int(min(alpha,te)*255)
+    outlined(draw,cxf(draw,scene['title'],fnt_t),160,
+             scene['title'],fnt_t,fill=txt,sw=5,alpha=ta)
+
+    # Underline
+    ule=easeOutExpo(min(max(fi-8,0)/10,1.0))
+    if ule>0:
+        w_,_=tbbox(draw,scene['title'],fnt_t)
+        ux=cxf(draw,scene['title'],fnt_t)
+        draw.rectangle([ux,295,ux+int(w_*ule),305],fill=(*acc,int(ule*ta)))
+
+    # Bullets — evenly spaced in remaining height
+    fnt_b=F(60,"SemiBold")
+    n_bullets=len(scene['bullets'])
+    # Remaining space: 320 to 1600 = 1280px / n_bullets
+    slot=(1600-320)//n_bullets
+    start_y=340
+
+    for i,text in enumerate(scene['bullets']):
+        delay=i*7
+        be=easeOutBack(min(max(fi-delay,0)/13,1.0))
+        ba=int(min(alpha,be)*255)
+        bdy=int((1-be)*100)
+        if ba<5: continue
+
+        by=start_y+i*slot+bdy
+        bh=slot-20
+
+        # Dark card
+        draw.rounded_rectangle([44,by,W-44,by+bh],radius=18,fill=(0,0,0,int(ba*0.55)))
+        draw.rounded_rectangle([44,by,W-44,by+bh],radius=18,outline=(*acc,int(ba*0.35)),width=2)
+
+        # Accent left stripe
+        draw.rounded_rectangle([44,by,60,by+bh],radius=9,fill=(*acc,ba))
+
+        # Text centred in card
+        w_,h_=tbbox(draw,text,fnt_b)
+        tx=80; ty=by+(bh-h_)//2
+        outlined(draw,tx,ty,text,fnt_b,fill=txt,sw=3,alpha=ba)
+
+# ── SCENE: PROMPT ─────────────────────────────────────────────────
+def scene_PROMPT(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf); t=fi/FPS
+
+    fnt_t=F(96,"Black")
+    te=easeOutExpo(min(fi/10,1.0)); ta=int(min(alpha,te)*255)
+    outlined(draw,cxf(draw,scene['title'],fnt_t),170,
+             scene['title'],fnt_t,fill=txt,sw=5,alpha=ta)
+
+    # Terminal box: y=330 to y=1400
+    by1=330; by2=1420
+    be=easeOutExpo(min(max(fi-6,0)/14,1.0)); ba=int(min(alpha,be)*255)
+
+    draw.rounded_rectangle([44,by1,W-44,by2],radius=26,fill=(4,10,22,int(ba*0.93)))
+    draw.rounded_rectangle([44,by1,W-44,by2],radius=26,outline=(*acc,ba),width=3)
+
+    # Top bar
+    draw.rounded_rectangle([44,by1,W-44,by1+54],radius=26,fill=(8,18,38,ba))
+    draw.rectangle([44,by1+27,W-44,by1+54],fill=(8,18,38,ba))
+    for bx,col in [(82,(255,75,75)),(122,(255,190,45)),(162,(45,195,75))]:
+        draw.ellipse([bx-12,by1+17,bx+12,by1+37],fill=(*col,ba))
+    draw.text((192,by1+16),"AI Prompt — Copy & Paste",
+              font=F(36,"SemiBold"),fill=(*acc,ba))
+
+    # Typed code lines
+    fnt_c=F(52,"Regular"); line_h=155
+    chars_ps=24; total=sum(len(l) for l in scene['code'])
+    shown_c=min(int(t*chars_ps),total)
+    count=0; ty=by1+72
+
+    for li,line in enumerate(scene['code']):
+        if count>=shown_c: break
+        chunk=line[:max(0,shown_c-count)]
+        w_,_=tbbox(draw,chunk,fnt_c)
+        # Highlight $ amounts
+        col=acc2 if '$' in chunk or 'discount' in chunk.lower() else (170,205,255)
+        draw.text((80,ty),chunk,font=fnt_c,fill=(*col,ba))
+        # Cursor
+        if count+len(line)>=shown_c and int(t*2)%2==0:
+            draw.rectangle([80+w_,ty+6,83+w_,ty+48],fill=(*acc,ba))
+        count+=len(line); ty+=line_h
+
+# ── SCENE: CTA ────────────────────────────────────────────────────
+def scene_CTA(draw,scene,fi,nf):
+    th=THEMES[scene['theme']]; acc=th['acc']; acc2=th['acc2']; txt=th['txt']
+    alpha=sceneAlpha(fi,nf); t=fi/FPS
+
+    # Pulsing rings centred vertically
+    cy_ring=H//2-100
+    for ri,(br,ph) in enumerate([(300,0),(380,0.7),(460,1.4)]):
+        rp=(t*0.75+ph)%2/2
+        rr=int(br+rp*90); ra=int((1-rp)*55)
+        if ra>2:
+            draw.ellipse([W//2-rr,cy_ring-rr,W//2+rr,cy_ring+rr],
+                        outline=(*acc,ra),width=3)
+
+    # Lines
+    cols=[txt,acc,acc2]; szs=[164,172,76]; wts=["Black","Black","ExtraBold"]
+    line_hs=[180,190,90]; start_y=cy_ring-240
+
+    sy=start_y
+    for i,(line,sz,wt,col,lh) in enumerate(zip(scene['lines'],szs,wts,cols,line_hs)):
+        delay=i*5
+        be=easeOutBack(min(max(fi-delay,0)/13,1.0))
+        ba=int(min(alpha,be)*255)
+        bounce=int(math.sin(t*3.2+i)*9)
+        fnt=F(sz,wt)
+        x=cxf(draw,line,fnt)
+        for off,op in [(12,12),(6,32),(2,65)]:
+            draw.text((x+off,sy+bounce+off),line,font=fnt,fill=(*acc,int(op/100*ba)))
+        outlined(draw,x,sy+bounce,line,fnt,fill=col,sw=6,alpha=ba)
+        sy+=lh
+
+    # Sub
+    fnt_s=F(60,"SemiBold")
+    se=easeOutExpo(min(max(fi-18,0)/10,1.0)); sa=int(min(alpha,se)*255)
+    outlined(draw,cxf(draw,scene['sub'],fnt_s),sy+20,
+             scene['sub'],fnt_s,fill=acc2,sw=3,alpha=sa)
+
+# ── MASTER COMPOSE ────────────────────────────────────────────────
+RENDERERS={"HOOK":scene_HOOK,"BIGNUM":scene_BIGNUM,
+           "BULLET":scene_BULLET,"PROMPT":scene_PROMPT,"CTA":scene_CTA}
+
+def compose(scene,fi,nf):
+    bg=make_bg(scene['theme'],fi,nf)
+    img=Image.fromarray(cv2.cvtColor(bg,cv2.COLOR_BGR2RGB)).convert("RGBA")
+    draw=ImageDraw.Draw(img,"RGBA")
+    RENDERERS[scene['type']](draw,scene,fi,nf)
+    caption(draw,scene['narr'],fi,nf,scene['theme'])
+    # Progress bar
+    acc=THEMES[scene['theme']]['acc']
+    draw.rectangle([0,H-9,W,H],fill=(15,15,20,255))
+    draw.rectangle([0,H-9,int(W*fi/nf),H],fill=(*acc,255))
+    return cv2.cvtColor(np.array(img.convert("RGB")),cv2.COLOR_RGB2BGR)
+
+print("✅ Fixed render engine ready")
+
+
+# ================================================================
+# CELL 4: RENDER
+# ================================================================
+RAW="raw_fixed.mp4"
+out=cv2.VideoWriter(RAW,cv2.VideoWriter_fourcc(*'mp4v'),FPS,(W,H))
+total_f=0; t0=time.time()
+print(f"🎬 Rendering {sum(s['dur'] for s in SCENES)*FPS} frames...\n")
+
+for si,scene in enumerate(SCENES):
+    nf=scene['dur']*FPS; t1=time.time()
+    print(f"  [{si+1}/{len(SCENES)}] {scene['type']:7}|{scene['theme']:5}| {nf}f",end="  ")
+    for fi in range(nf):
+        out.write(compose(scene,fi,nf)); total_f+=1
+    print(f"✅ {nf/(time.time()-t1):.0f}fps")
+
+out.release()
+e=time.time()-t0
+print(f"\n✅ {total_f}f in {e:.1f}s — {total_f/e:.1f}fps avg | {'GPU' if USE_GPU else 'CPU'}")
+
+
+# ================================================================
+# CELL 5: AUDIO + MERGE + DOWNLOAD
+# ================================================================
+from gtts import gTTS
+full=" ".join(s['narr'] for s in SCENES)
+print("🎙 Generating narration...")
+gTTS(text=full,lang='en',slow=False,tld='com').save("narr_raw.mp3")
+
+subprocess.run(["ffmpeg","-y","-i","narr_raw.mp3",
+    "-filter_complex",
+    "atempo=0.91,highpass=f=100,"
+    "equalizer=f=300:t=o:w=1:g=-4,"
+    "equalizer=f=3000:t=o:w=1:g=5,"
+    "equalizer=f=9000:t=o:w=1:g=3,"
+    "aecho=1.0:0.5:22:0.1,"
+    "pan=stereo|c0=c0|c1=c0",
+    "-ar","44100","-b:a","192k","narr.mp3"],capture_output=True)
+
+def dur(p):
+    r=subprocess.run(['ffprobe','-v','error','-show_entries','format=duration',
+        '-of','default=noprint_wrappers=1:nokey=1',p],capture_output=True,text=True)
+    return float(r.stdout.strip())
+
+vd,ad=dur(RAW),dur("narr.mp3")
+print(f"Video {vd:.1f}s | Audio {ad:.1f}s")
+
+subprocess.run(["ffmpeg","-y","-i",RAW,"-i","narr.mp3",
+    "-c:v","libx264","-preset","slow","-crf","15","-pix_fmt","yuv420p",
+    "-c:a","aac","-b:a","256k","-ac","2",
+    "-shortest","-movflags","+faststart",
+    "shorts_fixed_final.mp4"],capture_output=True)
+
+fs=os.path.getsize("shorts_fixed_final.mp4")/1024/1024
+print(f"\n✅ shorts_fixed_final.mp4 — {dur('shorts_fixed_final.mp4'):.1f}s — {fs:.1f}MB")
+from google.colab import files
+files.download("shorts_fixed_final.mp4")
